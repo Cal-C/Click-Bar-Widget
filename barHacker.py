@@ -2,7 +2,6 @@ import pyautogui
 from PIL import ImageGrab
 import time
 import keyboard
-import cv2
 
 def is_white(pixel):
     return pixel[0] > 240 and pixel[1] > 240 and pixel[2] > 240
@@ -10,6 +9,8 @@ def is_white(pixel):
 def is_deep_blue(pixel):
     return pixel[0] < 50 and pixel[1] < 60 and pixel[2] > 60
 
+def is_green(pixel):
+    return pixel[0] < 60 and pixel[1] > 100 and pixel[2] < 60
 def get_position_with_key(prompt, key='`'):
     print(prompt)
     while True:
@@ -44,6 +45,13 @@ def check_and_click(screenshot, white_start, white_end, locked_y, button_pos):
         pyautogui.click(button_pos)
         time.sleep(0.5)  # Reduced wait time to 0.5 seconds for faster response
         return True
+    return False
+
+def green_line(screenshot, locked_y):
+    width, height = screenshot.size
+    for x in range(width):
+        if is_green(screenshot.getpixel((x, locked_y))):
+            return True
     return False
 
 def main():
@@ -87,6 +95,16 @@ def main():
             print("Retrying...")
             find_new_white_bounds = True
             last_click_time = time.time()
+
+        if find_new_white_bounds: #seeing if we clicked at the right time by checking for green line
+            time.sleep(0.01)
+            screenshot = ImageGrab.grab(bbox=(top_left[0], top_left[1], bottom_right[0], top_left[1] + 10))
+            if green_line(screenshot, locked_y):
+                print("Green line detected. Retrying...")
+                last_click_time = time.time()
+
+
+            
 
         time.sleep(0.01)  # Reduced delay between frames
 
