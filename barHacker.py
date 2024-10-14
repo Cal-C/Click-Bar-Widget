@@ -43,7 +43,7 @@ def check_and_click(screenshot, white_start, white_end, locked_y, button_pos):
     width, height = screenshot.size
     if is_deep_blue(screenshot.getpixel((white_start - 1, locked_y))) and (white_end >= width or not is_deep_blue(screenshot.getpixel((white_end, locked_y)))):
         pyautogui.click(button_pos)
-        time.sleep(0.5)  # Reduced wait time to 0.5 seconds for faster response
+        time.sleep(0.1)  # Reduced wait time to 0.1 seconds for faster response
         return True
     return False
 
@@ -51,7 +51,7 @@ def green_line(screenshot, locked_y):
     width, height = screenshot.size
     for x in range(width):
         if is_green(screenshot.getpixel((x, locked_y))):
-            return True
+            return x
     return False
 
 def main():
@@ -72,6 +72,7 @@ def main():
     white_start = white_end = None
     locked_y = None
     last_click_time = time.time()
+    adjustment = 20
 
     while True:
         if keyboard.is_pressed('esc'):
@@ -86,27 +87,36 @@ def main():
                 find_new_white_bounds = False
 
         if not find_new_white_bounds and locked_y is not None:
-            if check_and_click(screenshot, max(white_start - 40,5), white_end, locked_y, button_pos):
+            adjusted_start = max(white_start - adjustment, 0)
+            if check_and_click(screenshot, adjusted_start, white_end, locked_y, button_pos):
                 find_new_white_bounds = True
                 last_click_time = time.time()
 
         # Check if 5 seconds have passed since the last click
         if time.time() - last_click_time > 5:
-            print("Retrying...")
             find_new_white_bounds = True
             last_click_time = time.time()
 
-        if find_new_white_bounds: #seeing if we clicked at the right time by checking for green line
-            time.sleep(0.01)
+        if find_new_white_bounds and white_start and white_end and locked_y: #seeing if we clicked at the right time by checking for green line
+            time.sleep(0.1)
             screenshot = ImageGrab.grab(bbox=(top_left[0], top_left[1], bottom_right[0], top_left[1] + 10))
-            if green_line(screenshot, locked_y):
-                print("Green line detected. Retrying...")
+            if greenx := green_line(screenshot, locked_y):
+                print("Green line detected. Greenx:" + str(greenx))
+                greenDiff = 0
+                if greenx < white_start:
+                    greenDiff = white_start - greenx
+                    adjustment -= 5
+                    print("Green line detected before white space. new adjustment:" + str(adjustment))
+                elif greenx > white_end:
+                    greenDiff = greenx - white_end
+                    adjustment += 5
+                    print("Green line detected after white space. new adjustment:" + str(adjustment))
                 last_click_time = time.time()
 
 
             
 
-        time.sleep(0.01)  # Reduced delay between frames
+        time.sleep(0.001)  # Reduced delay between frames
 
 if __name__ == "__main__":
     main()
