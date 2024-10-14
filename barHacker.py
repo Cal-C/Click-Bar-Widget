@@ -22,20 +22,21 @@ def get_position_with_key(prompt, key='`'):
 
 def find_white_bounds(screenshot):
     width, height = screenshot.size
-    for y in range(height):  # Only check the top 10 pixels
-        if is_deep_blue(screenshot.getpixel((5, y))):  # Check if the first pixel is deep blue
-            for x in range(width):  # Adjust coordinates
-                pixel = screenshot.getpixel((x, y))
-                if is_white(pixel):
-                    # Identify the bounds of the white space
-                    white_start = x
-                    while x < width and is_white(screenshot.getpixel((x, y))):
-                        x += 1
-                    white_end = x+1
+    for y in range(height):  
+        for i in range(10):
+            if is_deep_blue(screenshot.getpixel((i, y))):  # Check if the first 10 pixel is deep blue
+                for x in range(width):  # Adjust coordinates
+                    pixel = screenshot.getpixel((x, y))
+                    if is_white(pixel):
+                        # Identify the bounds of the white space
+                        white_start = x
+                        while x < width and is_white(screenshot.getpixel((x, y))):
+                            x += 1
+                        white_end = x+1
 
-                    print(f"White space found at y={y}, x={white_start}-{white_end}")
+                        print(f"White space found at y={y}, x={white_start}-{white_end}")
 
-                    return white_start, white_end, y
+                        return white_start, white_end, y
     
     return None, None, None
 
@@ -108,9 +109,7 @@ def main():
                 last_click_time = time.time()
 
         # Check if 5 seconds have passed since the last click
-        if time.time() - last_click_time > 5:
-            find_new_white_bounds = True
-            last_click_time = time.time()
+
 
         if find_new_white_bounds and white_start and white_end and locked_y: #seeing if we clicked at the right time by checking for green line
             time.sleep(0.1)
@@ -130,6 +129,11 @@ def main():
                     print("Green line detected after white space. new adjustment:" + str(adjustment))
                 last_click_time = time.time()
 
+        if time.time() - last_click_time > 5:
+            find_new_white_bounds = True
+            last_click_time = time.time()
+            adjustment -= 2
+            print("Adjustment increased to " + str(adjustment) + " due to timeout")
 
             
 
