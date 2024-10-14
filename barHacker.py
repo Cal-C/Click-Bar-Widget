@@ -83,11 +83,26 @@ def main():
         # Limit the y-coordinate range to the top part of the bar
         if find_new_white_bounds:
             white_start, white_end, locked_y = find_white_bounds(screenshot)
+            # Adjust the start position
+            if white_start is None:
+                print("White space not found. Retrying...")
+                time.sleep(0.1)
+                continue
+            adjusted_start = white_start - adjustment
+            if adjusted_start < 0:
+                adjusted_start = screenshot.size[0] + adjusted_start - 5
+            adjusted_start = max(0, adjusted_start)
+            if white_end >= screenshot.size[0] - 5:
+                adjusted_start = min(adjusted_start, white_start - 5)
+            else:
+                adjusted_start = min(adjusted_start, screenshot.size[0] - 1)
+            
+            print(f"Adjusted start: {adjusted_start}, white_start: {white_start}, white_end: {white_end}, screenshot.size[0]: {screenshot.size[0]}, locked_y: {locked_y}")
             if white_start is not None:
                 find_new_white_bounds = False
 
         if not find_new_white_bounds and locked_y is not None:
-            adjusted_start = max(white_start - adjustment, 0)
+            # Check and click
             if check_and_click(screenshot, adjusted_start, white_end, locked_y, button_pos):
                 find_new_white_bounds = True
                 last_click_time = time.time()
@@ -105,11 +120,13 @@ def main():
                 greenDiff = 0
                 if greenx < white_start:
                     greenDiff = white_start - greenx
-                    adjustment -= 5
+                    greenDiff = max(min(greenDiff, 10), -10)
+                    adjustment -= greenDiff
                     print("Green line detected before white space. new adjustment:" + str(adjustment))
                 elif greenx > white_end:
                     greenDiff = greenx - white_end
-                    adjustment += 5
+                    greenDiff = max(min(greenDiff, 10), -10)
+                    adjustment += greenDiff
                     print("Green line detected after white space. new adjustment:" + str(adjustment))
                 last_click_time = time.time()
 
